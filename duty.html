@@ -206,7 +206,7 @@
         /* ── 근태표 ── */
         .grid-table { width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; text-align:center; border:1px solid #dde3ec; border-radius:11px; overflow:hidden; }
         .grid-table thead th { background:#26344f; color:#fff; font-weight:700; font-size:11.5px; padding:8px 3px; }
-        .grid-table tbody td { border-top:1px solid #e2e6ee; padding:4px 3px; font-size:12.5px; height:50px; vertical-align:middle; color:#1f2329; }
+        .grid-table tbody td { border-top:1px solid #e2e6ee; padding:4px 3px; font-size:12.5px; height:50px; vertical-align:top; color:#1f2329; }
         .grid-table th[data-w="토"] .th-w{color:#9fc3ff;} .grid-table th[data-w="일"] .th-w{color:#ffb0aa;}
         .grid-table th .th-w { display:block; font-size:12.5px; font-weight:800; line-height:1.2; }
         .grid-table th .th-d { display:block; font-size:9.5px; font-weight:600; color:#aeb9d0; line-height:1.2; margin-top:2px; }
@@ -214,11 +214,6 @@
         .grid-table th:first-child { width:60px !important; }
         .grid-table th[data-w] { width: 20% !important; }
         .grid-table td.wknd { background:#f5f7fb; }
-        .grid-table th.holi .th-w { color:#ffb0aa; }
-        .grid-table th.holi .th-hname { display:block; font-size:8.5px; font-weight:700; color:#ffcac6; line-height:1.2; margin-top:1px; }
-        .grid-table td.holi-col { background:#fdf3f2; }
-        .day-node.holi .n-w { color:#d93025; }
-        .capture-target .grid-table th.holi .th-hname { font-size:9.5px; }
 
         /* 인쇄 전용 레터헤드 / 푸터 */
         .print-head, .print-foot { display:none; }
@@ -265,7 +260,7 @@
         .img-overlay .img-close { background:rgba(255,255,255,.18); color:#fff; }
         .cap-spin { position:fixed; inset:0; background:rgba(255,255,255,.65); z-index:9998; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--ink-soft); }
         /* 근태 셀: 하루에 여러 건을 한 줄씩 쌓아 표시 */
-        .att-stack { display:flex; flex-direction:column; gap:3px; justify-content:center; min-height:42px; padding:1px 0; }
+        .att-stack { display:flex; flex-direction:column; gap:3px; justify-content:flex-start; min-height:42px; padding:1px 0; }
         .att-item { border-radius:5px; padding:3px; line-height:1.25; display:flex; flex-direction:column; align-items:center; gap:2px; }
         .att-item.출장 { background:var(--trip-bg); color:var(--trip-ink); }
         .att-item.근태 { background:var(--leave-bg); color:var(--leave-ink); }
@@ -631,7 +626,8 @@
         const dbRef = database.ref('perfect_clean_report_2026');
         const finalRef = database.ref('perfect_clean_report_2026_final_v4'); // 업무 단위 평면 목록 {thisWeek:[{d,t,x}], lastWeek:[...]}
         const weekRef = database.ref('perfect_clean_report_2026_week'); // 기준 주차(월요일) 저장
-        const archiveRef = database.ref('perfect_clean_report_2026_final_archive'); // 주차별 최종본 보관 {ISO: {thisWeek,lastWeek,label,savedAt}}
+        const archiveRef = database.ref('perfect_clean_report_2026_final_archive');
+        const compRef = database.ref('comp_leave_2026'); // 대체휴무(comp.html) — 읽기 전용 표시 연동 // 주차별 최종본 보관 {ISO: {thisWeek,lastWeek,label,savedAt}}
 
         const MEMBERS = ["위원장","수석","사무長","기획長","대협長","총무","조직","기획","정책","복지","산안","교문","손課","홍部","김次","이課"];
         const ACT_MEMBERS = ["총무","조직","기획","정책","복지","산안","교문"]; // 활동 보고 부서 (위원장·수석·사무長·기획長·대협長·홍部·손課·김次·이課은 출장근태만)
@@ -639,33 +635,6 @@
         const ATT_DAYS = ["월","화","수","목","금"]; // 출장·근태는 월~금 (주말 제외)
         let dayLabels = {}; // 요일→날짜 라벨 (예: 월→6/22)
         const WKND = { "토":true, "일":true };
-
-        // ── 대한민국 공휴일 (2026~2027) — 필요 시 여기에 추가 ──
-        const HOLIDAYS = {
-            "2026-01-01":"신정",
-            "2026-02-16":"설 연휴","2026-02-17":"설날","2026-02-18":"설 연휴",
-            "2026-03-02":"삼일절 대체휴일",
-            "2026-05-05":"어린이날",
-            "2026-05-25":"부처님오신날 대체휴일",
-            "2026-06-03":"지방선거일",
-            "2026-08-17":"광복절 대체휴일",
-            "2026-09-24":"추석 연휴","2026-09-25":"추석",
-            "2026-10-05":"개천절 대체휴일",
-            "2026-10-09":"한글날",
-            "2026-12-25":"성탄절",
-            "2027-01-01":"신정",
-            "2027-02-08":"설 연휴","2027-02-09":"설날 대체휴일",
-            "2027-03-01":"삼일절",
-            "2027-03-03":"대통령선거일",
-            "2027-05-05":"어린이날",
-            "2027-05-13":"부처님오신날",
-            "2027-08-16":"광복절 대체휴일",
-            "2027-09-14":"추석 연휴","2027-09-15":"추석","2027-09-16":"추석 연휴",
-            "2027-10-04":"개천절 대체휴일",
-            "2027-10-11":"한글날 대체휴일",
-            "2027-12-27":"성탄절 대체휴일"
-        };
-        let holiDays = {}; // 이번 주 요일→공휴일명 (예: 월→광복절 대체휴일)
 
         let selectedUser = "";
         let serverCache = {};
@@ -679,6 +648,7 @@
         let weekMonday = null; // 기준 주차의 월요일 (Date) — weekRef에서 로드
         // 부서별 활동 표에서 "이미지 저장 시 제외"할 부서 (화면 표시·Firebase 데이터에는 영향 없음, 브라우저 메모리에만 유지)
         let deptOff = {};
+        let compCache = {}; // 대체휴무 사용 내역 {직책:{use:{id:{date,half}}}}
 
         function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
         function pad(n){ return String(n).padStart(2,'0'); }
@@ -725,28 +695,12 @@
             document.getElementById('phWorkFoot').innerText = today;
             document.getElementById('phAttFoot').innerText = today;
 
-            holiDays = {};
             ATT_DAYS.forEach((w, i) => {
                 const t = new Date(mon); t.setDate(mon.getDate() + i);
                 const lbl = `${t.getMonth()+1}/${t.getDate()}`;
                 dayLabels[w] = lbl;
-                const key = `${t.getFullYear()}-${pad(t.getMonth()+1)}-${pad(t.getDate())}`;
-                const hname = HOLIDAYS[key] || '';
-                if (hname) holiDays[w] = hname;
                 const cd = document.getElementById(`cd-${w}`); if (cd) cd.innerText = lbl;
-                const th = document.querySelector(`.grid-table th[data-w="${w}"]`);
-                const thd = document.getElementById(`thd-${w}`);
-                if (thd) thd.innerText = lbl;
-                if (th) {
-                    th.classList.toggle('holi', !!hname);
-                    let hn = th.querySelector('.th-hname');
-                    if (hname) {
-                        if (!hn) { hn = document.createElement('span'); hn.className = 'th-hname'; th.appendChild(hn); }
-                        hn.innerText = hname;
-                    } else if (hn) hn.remove();
-                }
-                const node = document.querySelector(`.day-node[data-w="${w}"]`);
-                if (node) node.classList.toggle('holi', !!hname);
+                const thd = document.getElementById(`thd-${w}`); if (thd) thd.innerText = lbl;
             });
         }
 
@@ -780,6 +734,16 @@
             if (Array.isArray(v)) return v.filter(Boolean);
             if (v.type || v.text) return [v];                    // 구버전 단일 객체
             return Object.keys(v).sort((a, b) => a - b).map(k => v[k]).filter(Boolean); // Firebase가 배열을 객체로 반환한 경우
+        }
+        // 대체휴무 사용분 → 근태 항목으로 변환 (표시 전용, Firebase 근태 데이터에는 저장하지 않음)
+        function compItemsOf(member, day) {
+            const mon = weekMonday ? new Date(weekMonday) : autoNextMonday();
+            const i = ATT_DAYS.indexOf(day); if (i < 0) return [];
+            const t = new Date(mon); t.setDate(mon.getDate() + i);
+            const iso = isoDate(t);
+            const use = (compCache[member] || {}).use || {};
+            return Object.keys(use).filter(k => use[k] && use[k].date === iso)
+                .map(k => ({ type: '근태', text: '대체휴무' + (use[k].half && use[k].half !== '전일' ? '(' + use[k].half + ')' : ''), comp: true }));
         }
         function attListOf(member, day) {
             return normDay(((serverCache[member] || {}).days || {})[day]);
@@ -1019,24 +983,25 @@
             MEMBERS.forEach(m => {
                 let row = `<tr><td class="dept">${m}</td>`;
                 ATT_DAYS.forEach(w => {
-                    const list = normDay(serverCache[m]?.days?.[w]);
+                    const list = normDay(serverCache[m]?.days?.[w]).concat(compItemsOf(m, w));
                     if (list.length) {
                         // 같은 종류(출장/근태)끼리 묶어서 태그는 한 번만, 내용은 한 줄씩
                         const groups = [];
                         list.forEach((sc, idx) => {
                             let g = groups.find(x => x.type === sc.type);
                             if (!g) { g = { type: sc.type, entries: [] }; groups.push(g); }
-                            g.entries.push({ text: sc.text || '', idx: idx });
+                            g.entries.push({ text: sc.text || '', idx: idx, comp: !!sc.comp });
                         });
                         const items = groups.map(g =>
                             `<div class="att-item ${g.type}"><span class="b-tag">${g.type}</span>` +
                             g.entries.map(e =>
-                                `<span class="b-txt" title="더블클릭 삭제" ondblclick="removeAttLive('${m}','${w}',${e.idx})">${escapeHtml(e.text)}</span>`
+                                e.comp ? `<span class="b-txt" title="대체휴무 도구에서 신청됨">${escapeHtml(e.text)}</span>`
+                                       : `<span class="b-txt" title="더블클릭 삭제" ondblclick="removeAttLive('${m}','${w}',${e.idx})">${escapeHtml(e.text)}</span>`
                             ).join('') +
                             `</div>`
                         ).join('');
-                        row += `<td${holiDays[w] ? ' class="holi-col"' : ''}><div class="att-stack">${items}</div></td>`;
-                    } else row += `<td${holiDays[w] ? ' class="holi-col"' : ''}></td>`;
+                        row += `<td><div class="att-stack">${items}</div></td>`;
+                    } else row += `<td></td>`;
                 });
                 grid += row + `</tr>`;
             });
@@ -1369,6 +1334,8 @@
                 finalItems = { thisWeek: Array.isArray(v.thisWeek) ? v.thisWeek : [], lastWeek: Array.isArray(v.lastWeek) ? v.lastWeek : [] };
                 if (!editingWeek) maybeRenderFinal(); // 과거 주 편집 중이면 현재 주 변경으로 화면 안 건드림
             });
+
+            compRef.on('value', (snap) => { compCache = snap.val() || {}; renderSummary(); });
 
             archiveRef.on('value', (snap) => {
                 archiveList = snap.val() || {};
